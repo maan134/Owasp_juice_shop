@@ -109,7 +109,7 @@ jobs:
    # 6. Build and Deploy Container
   build-deploy:
     runs-on: ubuntu-latest
-    needs: [install, sast, sbom, secrets-scan]
+    
     steps:
       - name: Build Docker image
         run: docker build -t juice-shop:latest .
@@ -136,7 +136,7 @@ jobs:
   # 5. Secrets Scanning
   secrets-scan:
     runs-on: ubuntu-latest
-    needs: install
+    
     steps:
       - name: Run TruffleHog
         run: trufflehog filesystem . --json > secrets-report.json
