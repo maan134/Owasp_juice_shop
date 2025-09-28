@@ -17,8 +17,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-      #- name: Install npm dependencies
-       # run: npm install
+      - name: Install dependencies
+        run: npm install -g @cyclonedx/cyclonedx-npm
+        
   # 3. Static Application Security Testing (SAST)
   sast:
     runs-on: ubuntu-latest
@@ -85,5 +86,24 @@ jobs:
         -F file=@"npm_result.json" \
         -F 'scan_type=NPM Audit Scan' \
         -F 'tags=test'
+        
+  sbom:
+        runs-on: ubuntu-latest
+        name: SBOM
+        steps:
+        - name: Checkout the code
+          uses: actions/checkout@v4
+        - name: Install dependencies
+          run: npm install -g @cyclonedx/cyclonedx-npm
+        - name: Generate SBOM in JSON
+          run: |
+           cyclonedx-npm --output-file sbom.json --output-format json
+        - name: Upload SBOM and Scan Report
+          uses: actions/upload-artifact@v4
+          with:
+            name: sbom-and-report
+            path: |
+              sbom.json
+        
     
             
