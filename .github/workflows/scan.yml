@@ -125,8 +125,7 @@ jobs:
     steps:
       - name: Run OWASP ZAP scan
         run: |
-          docker pull owasp/zap2docker-stable
-          docker run -t owasp/zap2docker-stable zap-baseline.py -t http://host.docker.internal:3000 -r zap-report.html
+          docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://host.docker.internal:3000 -r zap-report.html
       - name: Upload DAST report
         uses: actions/upload-artifact@v4
         with:
