@@ -28,7 +28,6 @@ jobs:
       actions: read
       contents: read
     steps:
-    - name: checkout the code
     - uses: actions/checkout@v4
     
     - name: nodejsscan scan
@@ -40,5 +39,11 @@ jobs:
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: results.sarif
+    - name: Upload Report as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+          name: NJSscan report
+          path: |
+            results.sarif
     
             
