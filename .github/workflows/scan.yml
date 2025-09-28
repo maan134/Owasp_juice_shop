@@ -35,6 +35,19 @@ jobs:
       uses: ajinabraham/njsscan-action@master
       with:
         args: '. --sarif --output results.sarif || true'
+    - name: Upload njsscan report
+      run : |
+        cat results.sarif
+        curl -X 'POST' \
+        'https://demo.defectdojo.org/' \
+        -H 'accept: application/json' \
+        -H 'Authorization: Token 548afd6fab3bea9794a41b31da0e9404f733e222' \
+        -H 'Content-Type: multipart/form-data' \
+        -F 'test=66' \
+        -F '[email protected];type=application/json' \
+        -F file=@"results.sarif" \
+        -F 'scan_type=SARIF' \
+        -F 'tags=test'
     - name: upload report to github code scanning
       uses: github/codeql-action/upload-sarif@v3
       with:
