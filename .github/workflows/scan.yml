@@ -107,5 +107,16 @@ jobs:
             path: |
               sbom.json
         
-    
+  # 5. Secrets Scanning
+  secrets-scan:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - name: Run TruffleHog
+        run: trufflehog filesystem . --json > secrets-report.json
+      - name: Upload secrets report
+        uses: actions/upload-artifact@v4
+        with:
+          name: secrets-report
+          path: secrets-report.json
             
