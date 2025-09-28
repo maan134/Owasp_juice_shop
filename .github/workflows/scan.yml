@@ -39,7 +39,7 @@ jobs:
       run : |
         cat results.sarif
         curl -X 'POST' \
-        'https://demo.defectdojo.org/' \
+        'https://demo.defectdojo.org/api/v2/reimport-scan/' \
         -H 'accept: application/json' \
         -H 'Authorization: Token 548afd6fab3bea9794a41b31da0e9404f733e222' \
         -H 'Content-Type: multipart/form-data' \
