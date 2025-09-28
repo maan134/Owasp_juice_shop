@@ -111,12 +111,11 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Build Docker image
-        run: docker build -t juice-shop:latest .
-      - name: Run Docker container
-        run: docker run -d -p 3000:3000 juice-shop:latest
-      - name: Wait for container to start
-        run: sleep 30
+       - name: Run Docker container
+         run: docker pull bkimminich/juice-shop
+              docker run -d -p 3000:3000 bkimminich/juice-shop
+       - name: Wait for container to start
+         run: sleep 30
 
   # 7. Dynamic Application Security Testing (DAST)
   dast:
