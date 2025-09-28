@@ -93,8 +93,10 @@ jobs:
         steps:
         - name: Checkout the code
           uses: actions/checkout@v4
+
+             
         - name: Install dependencies
-          run: npm install -g @cyclonedx/cyclonedx-npm
+          run: npm install | npm install -g @cyclonedx/cyclonedx-npm
         - name: Generate SBOM in JSON
           run: |
            cyclonedx-npm --output-file sbom.json --output-format json
