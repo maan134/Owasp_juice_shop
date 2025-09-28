@@ -28,7 +28,7 @@ jobs:
         run: npx eslint . --ext .js,.ts --plugin security --format json -o eslint-report.json
       # Optional: Integrate Checkmarx CLI if available
       - name: Upload SAST report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sast-report
           path: eslint-report.json
