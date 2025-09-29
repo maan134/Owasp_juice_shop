@@ -150,7 +150,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dast-report
-          path: zap-report.html
+          path: /zap-reports/zap-report.html
         
   # 5. Secrets Scanning
   secrets-scan:
