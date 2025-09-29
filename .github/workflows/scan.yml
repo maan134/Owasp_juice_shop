@@ -125,9 +125,10 @@ jobs:
     steps:
       - name: Run OWASP ZAP scan
         run: |
-           mkdir -p zapwork && chmod -R 777 zapwork
-           docker run --network="host" -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+           docker run --network="host" -v $(pwd):/zap/wrk/:rwx -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
            -t https://preview.owasp-juice.shop -r zap-report.html || true
+        #mkdir -p zapwork && chmod -R 777 zapwork
+           
 
         # docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://host.docker.internal:3000 -r zap-report.html || true
         
