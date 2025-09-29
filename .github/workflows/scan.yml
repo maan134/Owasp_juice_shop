@@ -125,6 +125,8 @@ jobs:
     steps:
       - name: Run OWASP ZAP scan
         run: |
+           touch zap.yaml
+           chmod 666 zap.yaml
            docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
            -t https://preview.owasp-juice.shop -r zap-report.html || true
         #mkdir -p zapwork && chmod -R 777 zapwork
