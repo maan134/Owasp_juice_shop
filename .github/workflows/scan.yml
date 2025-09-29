@@ -143,14 +143,14 @@ jobs:
         
   # 5. Secrets Scanning
   secrets-scan:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Run TruffleHog
-        run: trufflehog filesystem . --json > secrets-report.json
-      - name: Upload secrets report
-        uses: actions/upload-artifact@v4
-        with:
-          name: secrets-report
-          path: secrets-report.json
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
+        - name: Secret Scanning
+          uses: trufflesecurity/trufflehog@main
+          with:
+            extra_args: --results=verified,unknown
             
