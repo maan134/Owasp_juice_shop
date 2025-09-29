@@ -121,13 +121,13 @@ jobs:
   # 7. Dynamic Application Security Testing (DAST)
   dast:
     runs-on: ubuntu-latest
-    needs: build-deploy
+    #needs: build-deploy
     steps:
       - name: Run OWASP ZAP scan
         run: |
            mkdir -p zapwork && chmod -R 777 zapwork
            docker run --network="host" -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-           -t http://localhost:3000 -r zap-report.html || true
+           -t https://preview.owasp-juice.shop -r zap-report.html || true
 
         # docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://host.docker.internal:3000 -r zap-report.html || true
         
