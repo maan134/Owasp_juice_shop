@@ -1,0 +1,170 @@
+name: DevSecOps Clean Pipeline
+on:
+  workflow_dispatch:
+
+jobs:
+  # 1️⃣ Checkout Code
+  checkout:
+    runs-on: ubuntu-latest
+    outputs:
+      repo-path: ${{ github.workspace }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+  # 2️⃣ Install Dependencies (Node + CycloneDX)
+  install-deps:
+    runs-on: ubuntu-latest
+    needs: checkout
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install CycloneDX
+        run: npm install -g @cyclonedx/cyclonedx-npm
+
+  # 3️⃣ Static Application Security Testing (SAST)
+  sast:
+    runs-on: ubuntu-latest
+    needs: install-deps
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run NJSSScan
+        uses: ajinabraham/njsscan-action@master
+        with:
+          args: '. --sarif --output results.sarif || true'
+      - name: Upload SAST to DefectDojo
+        run: |
+          curl -X POST 'https://demo.defectdojo.org/api/v2/reimport-scan/' \
+            -H 'accept: application/json' \
+            -H 'Authorization: Token 548afd6fab3bea9794a41b31da0e9404f733e222' \
+            -F 'test=66' \
+            -F '[email protected];type=application/json' \
+            -F file=@"results.sarif" \
+            -F 'scan_type=SARIF' \
+            -F 'tags=test'
+      - name: Upload to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+      - name: Upload SAST Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: njsscan-report
+          path: results.sarif
+
+  # 4️⃣ NPM Audit
+  npm-audit:
+    runs-on: ubuntu-latest
+    needs: install-deps
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node.js 20 + npm 6
+        run: |
+          curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          npm install -g npm@6.14.18
+      - name: Run npm audit
+        run: |
+          npm i --package-lock-only
+          npm audit --json > npm_result.json || true
+          cat npm_result.json
+      - name: Upload npmAudit to DefectDojo
+        run: |
+          curl -X POST 'https://demo.defectdojo.org/api/v2/reimport-scan/' \
+            -H 'accept: application/json' \
+            -H 'Authorization: Token 548afd6fab3bea9794a41b31da0e9404f733e222' \
+            -F 'test=67' \
+            -F '[email protected];type=application/json' \
+            -F file=@"npm_result.json" \
+            -F 'scan_type=NPM Audit Scan' \
+            -F 'tags=test'
+      - name: Upload npmAudit Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: npm_result.json
+
+  # 5️⃣ SBOM Generation
+  sbom:
+    runs-on: ubuntu-latest
+    needs: install-deps
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate SBOM
+        run: |
+          npm install
+          cyclonedx-npm --output-file sbom.json --output-format json
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+
+  # 6️⃣ Build & Deploy Container
+  build-deploy:
+    runs-on: ubuntu-latest
+    needs: [checkout]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Juice Shop Container
+        run: |
+          docker pull bkimminich/juice-shop
+          docker run -d -p 3000:3000 --name juice-shop bkimminich/juice-shop
+          sleep 30
+
+  # 7️⃣ Dynamic Application Security Testing (DAST)
+  dast:
+    runs-on: ubuntu-latest
+    needs: build-deploy
+    steps:
+      - name: Prepare ZAP workspace
+        run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
+          touch zap.yaml
+          chmod 666 zap.yaml
+      - name: Run OWASP ZAP Baseline Scan
+        run: |
+          docker run --rm --user root \
+            -v $PWD/zap-reports:/zap/wrk/:rw \
+            -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:3000 \
+            -r zap-report.html || true
+      - name: Upload DAST Report to DefectDojo
+        run: |
+          curl -X POST 'https://demo.defectdojo.org/api/v2/reimport-scan/' \
+            -H 'accept: application/json' \
+            -H 'Authorization: Token 548afd6fab3bea9794a41b31da0e9404f733e222' \
+            -F 'test=70' \
+            -F '[email protected];type=application/json' \
+            -F file=@"zap-reports/zap-report.html" \
+            -F 'scan_type=ZAP Scan' \
+            -F 'tags=test'
+      - name: Upload DAST Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-report
+          path: zap-reports/zap-report.html
+
+  # 8️⃣ Secrets Scanning
+  secrets-scan:
+    runs-on: ubuntu-latest
+    needs: checkout
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install & Run TruffleHog
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+          trufflehog --version
+          trufflehog git https://github.com/${{ github.repository }} --results=verified,unknown --json > trufflehog_results.json
+      - name: Upload TruffleHog Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trufflehog-report
+          path: trufflehog_results.json
