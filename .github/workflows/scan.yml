@@ -150,10 +150,14 @@ jobs:
           with:
             fetch-depth: 0
         - name: Secret Scanning
-          uses: trufflesecurity/trufflehog@main
-          with:
-            extra_args: --results=verified,unknown --json > trufflehog_results.json
-          continue-on-error: true
+          run: |
+            curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+            trufflehog --version
+            trufflehog --results=verified,unknown --json > trufflehog_results.json
+          #uses: trufflesecurity/trufflehog@main
+          #with:
+           # extra_args: --results=verified,unknown --json > trufflehog_results.json
+          #continue-on-error: true
         - name: Upload Report as Artifact
           uses: actions/upload-artifact@v4
           with:
