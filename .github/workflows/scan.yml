@@ -127,8 +127,10 @@ jobs:
         run: |
            touch zap.yaml
            chmod 666 zap.yaml
+           mkdir -p $(pwd)/zap-reports
+           chmod 777 $(pwd)/zap-reports
            docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-           -t https://preview.owasp-juice.shop -r zap-report.html || true
+           -t https://preview.owasp-juice.shop -r /zap-reports/zap-report.html || true
         #mkdir -p zapwork && chmod -R 777 zapwork
            
 
