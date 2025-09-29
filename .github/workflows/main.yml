@@ -120,7 +120,7 @@ jobs:
             -v $PWD/zap-reports:/zap/wrk/:rw \
             -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t https://preview.owasp-juice.shop \
-            -r zap-report.html || true
+            -r /zap-reports/zap-report.html || true
       - name: Upload DAST Artifact
         uses: actions/upload-artifact@v4
         with:
