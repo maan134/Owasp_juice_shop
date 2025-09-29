@@ -152,6 +152,12 @@ jobs:
         - name: Secret Scanning
           uses: trufflesecurity/trufflehog@main
           with:
-            extra_args: --results=verified,unknown
+            extra_args: --results=verified,unknown --json > trufflehog_results.json
           continue-on-error: true
+        - name: Upload Report as Artifact
+          uses: actions/upload-artifact@v4
+          with:
+              name: Trufflehog report
+              path: |
+                trufflehog_results.json
             
