@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # 1️⃣ Checkout Code
+  # Checkout Code
   checkout:
     runs-on: ubuntu-latest
     outputs:
@@ -12,7 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-  # 2️⃣ Install Dependencies (Node + CycloneDX)
+  # Install Dependencies (Node + CycloneDX)
   install-deps:
     runs-on: ubuntu-latest
     needs: checkout
@@ -24,7 +24,7 @@ jobs:
       - name: Install CycloneDX
         run: npm install -g @cyclonedx/cyclonedx-npm
 
-  # 3️⃣ Static Application Security Testing (SAST)
+  # Static Application Security Testing (SAST)
   sast:
     runs-on: ubuntu-latest
     needs: install-deps
@@ -56,7 +56,7 @@ jobs:
           name: njsscan-report
           path: results.sarif
 
-  # 4️⃣ NPM Audit
+  # NPM Audit
   npm-audit:
     runs-on: ubuntu-latest
     needs: install-deps
@@ -88,7 +88,7 @@ jobs:
           name: npm-audit-report
           path: npm_result.json
 
-  # 5️⃣ SBOM Generation
+  # SBOM Generation
   sbom:
     runs-on: ubuntu-latest
     needs: install-deps
@@ -104,7 +104,7 @@ jobs:
           name: sbom
           path: sbom.json
 
-   # 7️⃣ Dynamic Application Security Testing (DAST)
+   # Dynamic Application Security Testing (DAST)
   dast:
     runs-on: ubuntu-latest
     steps:
@@ -127,7 +127,7 @@ jobs:
           name: dast-report
           path: zap-report.html
 
-  # 8️⃣ Secrets Scanning
+  # Secrets Scanning
   secrets-scan:
     runs-on: ubuntu-latest
     needs: checkout
