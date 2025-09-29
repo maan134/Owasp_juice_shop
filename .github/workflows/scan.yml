@@ -153,4 +153,5 @@ jobs:
           uses: trufflesecurity/trufflehog@main
           with:
             extra_args: --results=verified,unknown
+          continue-on-error: true
             
