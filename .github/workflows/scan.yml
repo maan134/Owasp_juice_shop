@@ -130,7 +130,17 @@ jobs:
            mkdir -p $(pwd)/zap-reports
            chmod 777 $(pwd)/zap-reports
            docker run -v $(pwd):/zap/wrk/:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-           -t https://preview.owasp-juice.shop -r /zap-reports/zap-report.html || true
+           -t https://preview.owasp-juice.shop -r zap-report.html || true
+           curl -X 'POST' \
+            'https://demo.defectdojo.org/api/v2/reimport-scan/' \
+            -H 'accept: application/json' \
+            -H 'Authorization: Token 548afd6fab3bea9794a41b31da0e9404f733e222' \
+            -H 'Content-Type: multipart/form-data' \
+            -F 'test=70' \
+            -F '[email protected];type=application/json' \
+            -F file=@"zap-report.html" \
+            -F 'scan_type=ZAP Scan' \
+            -F 'tags=test'
         #mkdir -p zapwork && chmod -R 777 zapwork
            
 
