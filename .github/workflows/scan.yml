@@ -153,7 +153,7 @@ jobs:
           run: |
             curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
             trufflehog --version
-            trufflehog git . --results=verified,unknown --json > trufflehog_results.json
+            trufflehog git https://github.com/${{ github.repository }} --results=verified,unknown --json > trufflehog_results.json
           #uses: trufflesecurity/trufflehog@main
           #with:
            # extra_args: --results=verified,unknown --json > trufflehog_results.json
