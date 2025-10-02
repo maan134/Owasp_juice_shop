@@ -15,12 +15,6 @@ jobs:
       - name: Install python deps
         run: |
           python -m pip install --upgrade pip
-          if [ -f "package.json" ]; then
-            pip install --no-cache-dir -r package.json
-          else
-            echo "package.json not found. Exiting."
-            exit 1
-          fi
           pip install --no-cache-dir zaproxy==0.4.0
           
       - name: Install JSON tools
