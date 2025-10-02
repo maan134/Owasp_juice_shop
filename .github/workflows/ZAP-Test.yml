@@ -7,11 +7,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    
+      - name: Checkout repository
       - uses: actions/checkout@v4
+      
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          
       - name: Install python deps
         run: |
           python -m pip install --upgrade pip
@@ -20,28 +24,27 @@ jobs:
       - name: Install JSON tools
         run: sudo apt-get install -y jq
                   
-      - name: Run Docker Container
+      - name: Run Juice Shop Container
         run: |
-           - name: Checkout repository
-             uses: actions/checkout@v4
-           - name: Run Juice Shop Container
-             run: |
              docker pull bkimminich/juice-shop
              docker run -d --name vuln-app -p 3000:3000 bkimminich/juice-shop
-           - name: Wait for container to start
-             run: sleep 30
+      - name: Wait for container to start
+        run: sleep 30
                              
-            echo "Docker container logs:"
-            docker logs vuln-app
-  
-            echo "Docker container status:"
-            docker ps -a
+      - name: Check Docker container logs and status
+        run: |
+          echo "Docker container logs:"
+          docker logs vuln-app
+          echo "Docker container status:"
+          docker ps -a
             
-            echo "Testing application accessibility:"
-            curl -I http://localhost:3000 || echo "Warning: App may not be running properly"
-            
-            echo "Trying a simple GET request:"
-            curl -v http://localhost:3000/ || echo "Warning: GET request failed"
+      - name: Test application accessibility
+        run: |
+          echo "Testing application accessibility:"
+          curl -I http://localhost:3000 || echo "Warning: App may not be running properly"
+          echo "Trying a simple GET request:"
+          curl -v http://localhost:3000/ || echo "Warning: GET request failed"
+          shell: /usr/bin/bash -e
           
       - name: Install OWASP ZAP
         run: |
