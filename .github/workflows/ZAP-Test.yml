@@ -43,7 +43,6 @@ jobs:
           curl -I http://localhost:3000 || echo "Warning: App may not be running properly"
           echo "Trying a simple GET request:"
           curl -v http://localhost:3000/ || echo "Warning: GET request failed"
-          shell: /usr/bin/bash -e
           
       - name: Install OWASP ZAP
         run: |
