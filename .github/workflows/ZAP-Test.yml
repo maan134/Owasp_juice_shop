@@ -73,18 +73,19 @@ jobs:
           
       - name: Run Test Automation with ZAP
         run: |
-            docker run --rm \
-            -v $PWD/zap-reports:/zap/wrk/:rw \
-            -t http://localhost:3000/ \
-            -r /zap-reports/zap-report.html || true
+            echo "Running ZAP Baseline Scan against Juice Shop..."
+            ./zap/ZAP_2.16.1/zap-baseline.py \
+            -t http://localhost:3000 \
+            -r zap-report.html \
+            -I || true
                     
       - name: Verify ZAP Report Content
         run: |
           echo "Checking ZAP report content:"
-          cat /zap-reports/zap-report.html
+          cat zap-report.html
           
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report
-          path: ./zap-reports/zap-report.html
+          path: zap-report.html
