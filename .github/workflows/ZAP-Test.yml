@@ -43,41 +43,14 @@ jobs:
           curl -I http://localhost:3000 || echo "Warning: App may not be running properly"
           echo "Trying a simple GET request:"
           curl -v http://localhost:3000/ || echo "Warning: GET request failed"
-          
-      - name: Install OWASP ZAP
+               
+      - name: Run ZAP Baseline Scan (via Docker)
         run: |
-          mkdir -p ./zap
-          cd ./zap
-          wget -N https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz
-          tar -zxvf ZAP_2.16.1_Linux.tar.gz
-          rm ZAP_2.16.1_Linux.tar.gz
-          cd ZAP_2.16.1/plugin
-          wget https://github.com/zaproxy/zap-extensions/releases/download/exportreport-v6/exportreport-alpha-6.zap
-          echo 'export PATH_ZAP_SH=./zap/ZAP_2.16.1/zap.sh' >> ~/.bashrc
-          echo 'export ZAP_PORT=8090' >> ~/.bashrc
-          echo 'sh -c "$PATH_ZAP_SH -daemon -host 0.0.0.0 -port $ZAP_PORT -configfile ./zap/ZAP_2.16.1/conf" > /dev/null &' > start-zap
-          echo 'sleep 40' >> start-zap
-          echo 'sh -c "$PATH_ZAP_SH -host 0.0.0.0 -port $ZAP_PORT -configfile ./zap/ZAP_2.16.1/conf" > /dev/null &' > start-gui-zap
-          echo 'sleep 40' >> start-gui-zap
-          echo 'pkill -f zap' > stop-zap
-          chmod +x start-zap
-          chmod +x start-gui-zap
-          chmod +x stop-zap
-          echo $PWD
-          
-      - name: Run ZAP Daemon
-        run: |
-          ./zap/ZAP_2.16.1/zap.sh -daemon -host 0.0.0.0 -port 8090 -config api.addrs.addr.name=".*" -config api.addrs.addr.regex=true -config api.disablekey=true > /dev/null &
-          sleep 60
-          curl -I http://localhost:8090/ || echo "Warning: ZAP may not be running properly"
-          
-      - name: Run Test Automation with ZAP
-        run: |
-            echo "Running ZAP Baseline Scan against Juice Shop..."
-            ./zap/ZAP_2.16.1/zap-baseline.py \
-            -t http://localhost:3000 \
-            -r zap-report.html \
-            -I || true
+            mkdir -p zap-reports
+            docker run --rm \
+            -v $PWD/zap-reports:/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://localhost:3000 -r zap-report.html || true
                     
       - name: Verify ZAP Report Content
         run: |
@@ -88,4 +61,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report
-          path: zap-report.html
+          path: zap-reports/zap-report.html
