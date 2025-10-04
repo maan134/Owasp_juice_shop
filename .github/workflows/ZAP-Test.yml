@@ -73,16 +73,18 @@ jobs:
           
       - name: Run Test Automation with ZAP
         run: |
-          cd ./tests/
-          python e2e_zap.py
-          
+            docker run --rm \
+            -v $PWD/zap-reports:/zap/wrk/:rw \
+            -t http://localhost:3000/ \
+            -r /zap-reports/zap-report.html || true
+                    
       - name: Verify ZAP Report Content
         run: |
           echo "Checking ZAP report content:"
-          cat ./tests/zap-report.json | grep -v "@generated" | jq
+          cat /zap-reports/zap-report.html
           
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report
-          path: ./tests/zap-report.json
+          path: ./zap-reports/zap-report.html
