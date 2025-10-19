@@ -51,26 +51,11 @@ jobs:
             -v $(pwd):/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json || true
-            cat /zap/wrk/report.json
-
-        #  docker run --user $(id -u):$(id -g) -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:3000 -r report.html || true
-
-        # docker run -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:3000 -J /zap/wrk/zap_out.json || true
             
-        # mkdir -p zap-reports
-        # docker run --rm \
-        # -v $(PWD)/zap-reports:/zap/wrk/:rw \
-        # ghcr.io/zaproxy/zaproxy:stable \
-        # zap-baseline.py -t http://localhost:3000 -r zap-report.html || true
-        # cat zap-report.html
-
-            
-
-                    
       - name: Verify ZAP Report Content
         run: |
           echo "Checking ZAP report content:"
-          cat zap-report.html
+          cat /zap/wrk/report.json
           
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
