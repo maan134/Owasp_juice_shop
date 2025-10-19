@@ -47,6 +47,7 @@ jobs:
       - name: Run ZAP Baseline Scan (via Docker)
         run: |
             docker run --network="host" \
+            -e HOME=/zap/wrk \
             -v $(pwd):/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json -d || true
@@ -57,6 +58,8 @@ jobs:
           ls -la
           echo "Checking inside zap directory (if any):"
           ls -la /home/runner/work/* || true
+          echo "Checking for reports in /zap/wrk folder (mounted volume):"
+          docker run --rm -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable ls -la /zap/wrk
                     
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
