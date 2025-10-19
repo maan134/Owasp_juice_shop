@@ -48,13 +48,12 @@ jobs:
         run: |
             echo $(pwd) \
             docker run --network="host" \
-            --user root \
             -v $(pwd):/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json -d || true
+            zap-baseline.py -t http://localhost:3000 -j $(pwd)/report.json -d || true
                     
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report
-          path: /zap/wrk/report.json
+          path: report.json
