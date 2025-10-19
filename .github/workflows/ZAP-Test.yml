@@ -46,7 +46,6 @@ jobs:
                
       - name: Run ZAP Baseline Scan (via Docker)
         run: |
-            echo $(pwd) \
             docker run --network="host" \
             -v $(pwd):/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
