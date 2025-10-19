@@ -50,7 +50,7 @@ jobs:
             --user root \
             -v $(pwd):/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json || true
+            zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json -d || true
                     
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
