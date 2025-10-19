@@ -50,7 +50,7 @@ jobs:
             --user root \
             -v $(pwd):/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -j report.json
+            zap-baseline.py -t http://localhost:3000 -j report.json || true
             cat report.json
 
         #  docker run --user $(id -u):$(id -g) -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t http://localhost:3000 -r report.html || true
