@@ -51,14 +51,9 @@ jobs:
             -v $(pwd):/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json || true
-            
-      - name: Verify ZAP Report Content
-        run: |
-          echo "Checking ZAP report content:"
-          cat /zap/wrk/report.json
-          
+                    
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report
-          path: zap-reports/zap-report.html
+          path: /zap/wrk/report.json
