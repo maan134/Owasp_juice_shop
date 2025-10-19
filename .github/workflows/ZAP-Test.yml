@@ -47,9 +47,9 @@ jobs:
       - name: Run ZAP Baseline Scan (via Docker)
         run: |
             docker run --network="host" \
-            -v $(pwd):/zap/wrk \
+            -v $(pwd):/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t http://localhost:3000 -j $(pwd)/report.json -d || true
+            zap-baseline.py -t http://localhost:3000 -j report.json -d || true
                     
       - name: "Upload Report"
         uses: actions/upload-artifact@v4
