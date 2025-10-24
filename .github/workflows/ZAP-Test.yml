@@ -48,7 +48,6 @@ jobs:
         run: |
             echo $pwd |
             docker run --network="host" \
-            -e HOME=/zap/wrk \
             -v $(pwd):/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json -d || true
