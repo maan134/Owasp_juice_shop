@@ -46,6 +46,7 @@ jobs:
                
       - name: Run ZAP Baseline Scan (via Docker)
         run: |
+            echo $pwd |
             docker run --network="host" \
             -e HOME=/zap/wrk \
             -v $(pwd):/zap/wrk/:rw \
