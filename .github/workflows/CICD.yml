@@ -51,7 +51,6 @@ jobs:
       
       - name: npm audit
         run: |
-          npm i --package-lock-only
           npm audit --audit-level=moderate
           continue-on-error: true
       
