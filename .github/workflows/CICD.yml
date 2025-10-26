@@ -47,7 +47,9 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm install
+        run: |
+          echo $(pwd) |
+          npm install
       
       - name: npm audit
         run: |
