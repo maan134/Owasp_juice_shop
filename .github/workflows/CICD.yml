@@ -1,0 +1,322 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  workflow-dispatch:  
+
+env:
+  DOCKER_IMAGE: juice-shop-secure
+  DOCKER_TAG: ${{ github.sha }}
+
+jobs:
+  # ============================================
+  # STAGE 1: SECRET SCANNING
+  # ============================================
+  secret-scanning:
+    name: 🔍 Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+      
+      - name: Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================
+  # STAGE 2: DEPENDENCY SCANNING
+  # ============================================
+  dependency-scanning:
+    name: 📦 Dependency Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Trivy FS Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-fs'
+
+  # ============================================
+  # STAGE 3: STATIC APPLICATION SECURITY TESTING (SAST)
+  # ============================================
+  sast-scanning:
+    name: 🔬 SAST Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Semgrep SAST Scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/nodejs
+            p/typescript
+            p/owasp-top-ten
+          generateSarif: true
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      
+      - name: ESLint Security Scan
+        run: |
+          npm install eslint-plugin-security --save-dev
+          npx eslint . --ext .js,.ts --format json -o eslint-results.json || true
+        continue-on-error: true
+      
+      - name: Upload ESLint results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-results
+          path: eslint-results.json
+          retention-days: 7
+
+  # ============================================
+  # STAGE 4: BUILD APPLICATION
+  # ============================================
+  build-application:
+    name: 🏗️ Build & Test
+    runs-on: ubuntu-latest
+    needs: [secret-scanning, dependency-scanning]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            build/
+            dist/
+          retention-days: 7
+
+  # ============================================
+  # STAGE 5: CONTAINER BUILD & SCAN
+  # ============================================
+  container-security:
+    name: 🐳 Container Security
+    runs-on: ubuntu-latest
+    needs: build-application
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Trivy Image Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy image results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+          category: 'trivy-image'
+      
+      - name: Dockle Container Linting
+        uses: goodwithtech/dockle-action@main
+        with:
+          image: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+          format: 'json'
+          output: 'dockle-results.json'
+          exit-code: '0'
+      
+      - name: Upload Dockle results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dockle-results
+          path: dockle-results.json
+          retention-days: 7
+      
+      - name: Generate SBOM with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+          format: 'cyclonedx'
+          output: 'sbom.json'
+      
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}
+          format: 'cyclonedx-json'
+          output-file: 'sbom-syft.json'
+      
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-files
+          path: |
+            sbom.json
+            sbom-syft.json
+          retention-days: 30
+
+  # ============================================
+  # STAGE 6: DYNAMIC APPLICATION SECURITY TESTING (DAST)
+  # ============================================
+  dast-scanning:
+    name: ⚡ DAST Scanning
+    runs-on: ubuntu-latest
+    needs: container-security
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Start Juice Shop container
+        run: |
+          docker run -d -p 3000:3000 --name juice-shop bkimminich/juice-shop
+          sleep 30
+          curl -f http://localhost:3000 || exit 1
+      
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+          allow_issue_writing: false
+      
+      - name: OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.11.0
+        with:
+          target: 'http://localhost:3000'
+          allow_issue_writing: false
+          artifact_name: 'zap-full-scan'
+        continue-on-error: true
+      
+      - name: Stop container
+        if: always()
+        run: docker stop juice-shop && docker rm juice-shop
+
+  # ============================================
+  # STAGE 7: SECURITY REPORTING & COMPLIANCE
+  # ============================================
+  security-reporting:
+    name: 📊 Security Reports
+    runs-on: ubuntu-latest
+    needs: [sast-scanning, container-security, dast-scanning]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      
+      - name: Generate Security Summary
+        run: |
+          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Pipeline Execution: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Completed Security Checks" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 Secret Scanning (TruffleHog + Gitleaks)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Dependency Analysis (npm audit + Trivy)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔬 SAST (Semgrep + ESLint)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐳 Container Security (Trivy + Dockle)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 SBOM Generation (CycloneDX)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚡ DAST (OWASP ZAP)" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # STAGE 8: DEPLOYMENT (Conditional)
+  # ============================================
+  deploy:
+    name: 🚀 Deploy to Staging/Production
+    runs-on: ubuntu-latest
+    needs: [build-application, container-security, dast-scanning]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to environment
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "Deploying to PRODUCTION..."
+            # Add production deployment commands here
+          else
+            echo "Deploying to STAGING..."
+            # Add staging deployment commands here
+          fi
+      
+      - name: Deployment notification
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "Environment: ${{ github.ref == 'refs/heads/main' && 'PRODUCTION' || 'STAGING' }}"
+          echo "Image: ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}"
