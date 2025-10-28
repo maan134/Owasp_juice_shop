@@ -49,7 +49,7 @@ jobs:
           docker run --network="host" \
           -v "${{ github.workspace }}:/zap/wrk/:rw" \
           ghcr.io/zaproxy/zaproxy:stable \
-          zap-baseline.py -t http://localhost:3000 -j /zap/wrk/report.json -d || true
+          zap-baseline.py -t http://localhost:3000 -j report.json -d || true
 
       - name: Verify report exists
         run: |
