@@ -48,6 +48,7 @@ jobs:
       - name: Run ZAP Baseline Scan (via Docker)
         run: |
           mkdir -p zap_reports
+          chmod 777 zap_reports
           docker run --rm --network zapnet \
             -v $(pwd)/zap_reports:/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable \
