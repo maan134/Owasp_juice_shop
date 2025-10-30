@@ -49,9 +49,9 @@ jobs:
         run: |
           mkdir -p zap_reports
           docker run --rm --network zapnet \
-          -v $(pwd)/zap_reports:/zap/wrk \
-          ghcr.io/zaproxy/zaproxy:stable \
-          zap-baseline.py -t http://localhost:3000 -j report.json -d || true
+            -v $(pwd)/zap_reports:/zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://vuln-app:3000 -r zap_report.html -d || true
 
       - name: Verify report exists
         run: |
