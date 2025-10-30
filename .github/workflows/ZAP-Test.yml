@@ -25,7 +25,8 @@ jobs:
       - name: Run Juice Shop Container
         run: |
              docker pull bkimminich/juice-shop
-             docker run -d --name vuln-app -p 3000:3000 bkimminich/juice-shop
+             docker network create zapnet
+             docker run -d --network zapnet --name vuln-app -p 3000:3000 bkimminich/juice-shop
       - name: Wait for container to start
         run: sleep 30
                              
@@ -46,8 +47,9 @@ jobs:
                
       - name: Run ZAP Baseline Scan (via Docker)
         run: |
-          docker run --network="host" \
-          -v "${{ github.workspace }}:/zap/wrk/:rw" \
+          mkdir -p zap_reports
+          docker run --rm --network zapnet \
+          -v $(pwd)/zap_reports:/zap/wrk \
           ghcr.io/zaproxy/zaproxy:stable \
           zap-baseline.py -t http://localhost:3000 -j report.json -d || true
 
@@ -64,4 +66,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: zap-scan-report
-          path: report.json
+          path: zap_reports/
