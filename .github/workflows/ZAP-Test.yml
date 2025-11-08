@@ -24,15 +24,7 @@ jobs:
           docker logs vuln-app
           echo "Docker container status:"
           docker ps -a
-            
-      - name: Test application accessibility
-        shell: bash
-        run: |
-          echo "Testing application accessibility:"
-          curl -I http://localhost:3000 || echo "Warning: App may not be running properly"
-          echo "Trying a simple GET request:"
-          curl -v http://localhost:3000/ || echo "Warning: GET request failed"
-               
+                     
       - name: Run ZAP Baseline Scan (via Docker)
         run: |
           mkdir -p zap_reports
@@ -56,16 +48,3 @@ jobs:
         with:
           name: zap-scan-report
           path: zap_reports/
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          
-      - name: Install python deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install --no-cache-dir zaproxy==0.4.0
-          
-      - name: Install JSON tools
-        run: sudo apt-get install -y jq
